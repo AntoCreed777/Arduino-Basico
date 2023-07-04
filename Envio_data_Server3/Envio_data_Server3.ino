@@ -6,13 +6,34 @@ const char* ssid = "S91 Pro";
 const char* password = "ant.WIFI";
 
 String serverName = "http://pepa.desem.cl/antonio/update-sensor.php";
+//Variables MUX
+const int muxSIG = A0;
+const int muxS0 = D2;
+const int muxS1 = D3;
+const int muxS2 = D4;
+const int muxS3 = D5;
+
+void SetMuxChannel(byte channel)
+{
+  digitalWrite(muxS0, bitRead(channel, 0));
+  digitalWrite(muxS1, bitRead(channel, 1));
+  digitalWrite(muxS2, bitRead(channel, 2));
+  digitalWrite(muxS3, bitRead(channel, 3));
+}
+
+//Pines Sensores
+const int PinHum=0 ;
+const int PinLuz=1 ;
 
 void setup() {
   Serial.begin(9600);           //Inicializamos comunicación serie
   WiFi.begin(ssid, password);
-  pinMode(D6,OUTPUT);
-  pinMode(D7,OUTPUT);
-  pinMode(A0,INPUT);
+  
+  pinMode(muxS0, OUTPUT);
+  pinMode(muxS1, OUTPUT);
+  pinMode(muxS2, OUTPUT);
+  pinMode(muxS3, OUTPUT);
+  
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -23,26 +44,19 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("Leyendo datos");
-  Serial.println("espere...");
-  
-  digitalWrite(D6,HIGH);
-  delay(500);
-  int hum = analogRead(A0);// Leemos la humedad
-  delay(500);
-  digitalWrite(D6,LOW);
+  Serial.println("--------------------");
+  //Lectura sensor Humedad
+  SetMuxChannel(PinHum);
+  int hum=analogRead(muxSIG);
+  int conversionhum=map(hum,1023,0,0,100);
   /////////////////////////////////////////////////////
-  digitalWrite(D7,HIGH);
-  delay(500);
-  int luz = analogRead(A0);// Leemos la luz
-  delay(500);
-  digitalWrite(D7,LOW);
-  
+  //Lectura sensor Luz
+  SetMuxChannel(PinLuz);
+  int luz=analogRead(muxSIG);
   luz=constrain(luz,0,100);
-  luz=map(luz,0,100,100,0);
   
   Serial.print("Humedad: ");
-  Serial.print(hum);
+  Serial.print(conversionhum);
   Serial.println("%");
   Serial.print("Luz: ");
   Serial.print(luz);
@@ -51,7 +65,7 @@ void loop() {
 
   WiFiClient client;
   HTTPClient http;
-  String strhum = String(hum);
+  String strhum = String(conversionhum);
   String strluz= String(luz);
   String serverPath = serverName+"?hum="+strhum+"&luz="+strluz;
   
